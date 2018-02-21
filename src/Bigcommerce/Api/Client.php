@@ -115,6 +115,11 @@ class Client
         self::$connection = false;
     }
 
+    public static function useCache($option = true)
+    {
+        self::connection()->useCache($option);
+    }
+
     /**
      * Configure the API client with the required credentials.
      *

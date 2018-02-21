@@ -86,6 +86,10 @@ class Connection
      */
     private $contentType;
 
+    protected $use_cache=true;
+
+    protected $cache = [];
+
     /**
      * Initializes the connection object.
      */
@@ -108,6 +112,25 @@ class Connection
         }
 
         $this->setTimeout(60);
+    }
+
+    public function useCache($option=true) {
+        $this->use_cache = $option;
+    }
+
+    public function clearCache() {
+        unset($this->cache);
+    }
+
+    private function deleteSimilarCacheItems($key) {
+        $arToDel=[];
+        foreach ($this->cache as $k=>$v) {
+            if (strpos($k,$key)!==false) {
+                $arToDel[]=$k;
+            }
+        }
+        foreach ($arToDel as $k=>$v)
+            unset($this->cache[$v]);
     }
 
     /**
@@ -304,6 +327,23 @@ class Connection
             $this->followRedirectPath();
         }
 
+        $inf=curl_getInfo($this->curl);
+        if (isset($inf['url'])) {
+            $url=$inf['url'];
+            if ($status==204) {  //No answer body
+                $this->deleteSimilarCacheItems($url);//Clear cache with the similar content
+            }
+            elseif (strpos($url,'time')===false) {
+                if (is_object($body)) {
+                    $arUrl=explode("/",$url);
+                    if (!is_numeric(end($arUrl)) && isset($body->id)) {
+                        $url.='/'.$body->id;
+                    }
+                }
+                $this->cache[$url]=$body; //Write to the cache, regardless of whether we will use it or not
+            }
+        }
+
         return $body;
     }
 
@@ -360,20 +400,28 @@ class Connection
      */
     public function get($url, $query = false)
     {
-        $this->initializeRequest();
 
-        if (is_array($query)) {
-            $url .= '?' . http_build_query($query);
+        if ($this->use_cache && !empty($this->cache[$url])) {
+            return $this->cache[$url];
+        }
+        else
+        {
+            $this->initializeRequest();
+
+            if (is_array($query)) {
+                $url .= '?' . http_build_query($query);
+            }
+
+            curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'GET');
+            curl_setopt($this->curl, CURLOPT_URL, $url);
+            curl_setopt($this->curl, CURLOPT_POST, false);
+            curl_setopt($this->curl, CURLOPT_PUT, false);
+            curl_setopt($this->curl, CURLOPT_HTTPGET, true);
+            curl_exec($this->curl);
+
+            return $this->handleResponse();
         }
 
-        curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'GET');
-        curl_setopt($this->curl, CURLOPT_URL, $url);
-        curl_setopt($this->curl, CURLOPT_POST, false);
-        curl_setopt($this->curl, CURLOPT_PUT, false);
-        curl_setopt($this->curl, CURLOPT_HTTPGET, true);
-        curl_exec($this->curl);
-
-        return $this->handleResponse();
     }
 
     /**
