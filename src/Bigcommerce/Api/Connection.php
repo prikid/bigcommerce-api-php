@@ -398,7 +398,7 @@ class Connection
      *
      * @return mixed
      */
-    public function get($url, $query = false)
+    public function get($url, $query = false, $attempts=10)
     {
 
         if ($this->use_cache && !empty($this->cache[$url])) {
@@ -418,6 +418,12 @@ class Connection
             curl_setopt($this->curl, CURLOPT_PUT, false);
             curl_setopt($this->curl, CURLOPT_HTTPGET, true);
             curl_exec($this->curl);
+
+            $status=$this->getStatus();
+            if ($status == 500 && $attempts!=0) {
+                sleep(1);
+                return $this->get($url, $query, $attempts-1);
+            }
 
             return $this->handleResponse();
         }
