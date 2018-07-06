@@ -454,6 +454,7 @@ class Connection
         curl_setopt($this->curl, CURLOPT_PUT, false);
         curl_setopt($this->curl, CURLOPT_HTTPGET, false);
         curl_setopt($this->curl, CURLOPT_POSTFIELDS, $body);
+        curl_setopt($this->curl, CURLOPT_INFILE, STDIN);
         curl_exec($this->curl);
 
         return $this->handleResponse();

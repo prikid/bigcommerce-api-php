@@ -557,6 +557,17 @@ class Client
         return self::deleteResource('/products/' . $product_id . '/customfields/' . $id);
     }
 
+	/**
+	 * Delete all product custom fields.
+	 *
+	 * @param int $product_id product id
+	 * @return mixed
+	 */
+	public static function deleteProductCustomFields($product_id)
+	{
+		return self::deleteResource('/products/' . $product_id . '/customfields');
+	}
+
     /**
      * Returns the total number of products in the collection.
      *
